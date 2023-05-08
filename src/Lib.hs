@@ -12,6 +12,7 @@ import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as M
 import Network.Wai
 import Network.Wai.Handler.Warp
+import Network.Wai.Middleware.Cors
 import Servant
 
 data Meal = Meal
@@ -32,7 +33,7 @@ $(deriveJSON defaultOptions ''Meals)
 type API = "meals.json" :> Get '[JSON] Meals
 
 startApp :: IO ()
-startApp = run 8080 app
+startApp = run 8080 $ simpleCors app
 
 app :: Application
 app = serve api server

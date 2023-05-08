@@ -66,6 +66,7 @@ library:
     - containers
     - servant-server
     - wai
+    - wai-cors
     - warp
 
 executables:

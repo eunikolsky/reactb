@@ -63,6 +63,7 @@ library:
   source-dirs: src
   dependencies:
     - aeson
+    - containers
     - servant-server
     - wai
     - warp
@@ -89,6 +90,4 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - base
-    - reactb
     - hspec
-    - hspec-wai

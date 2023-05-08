@@ -50,6 +50,7 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
+    , containers
     , servant-server
     , wai
     , warp
@@ -110,6 +111,4 @@ test-suite reactb-test
   build-depends:
       base
     , hspec
-    , hspec-wai
-    , reactb
   default-language: Haskell2010

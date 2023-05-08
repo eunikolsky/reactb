@@ -8,19 +8,28 @@ module Lib
 
 import Data.Aeson
 import Data.Aeson.TH
+import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as M
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Servant
 
-data User = User
-  { userId        :: Int
-  , userFirstName :: String
-  , userLastName  :: String
+data Meal = Meal
+  { name :: String
+  , description :: String
+  , price :: Double
   } deriving stock (Eq, Show)
 
-$(deriveJSON defaultOptions ''User)
+$(deriveJSON defaultOptions ''Meal)
 
-type API = "users" :> Get '[JSON] [User]
+type MealKey = String
+
+newtype Meals = Meals (Map MealKey Meal)
+  deriving stock (Eq, Show)
+
+$(deriveJSON defaultOptions ''Meals)
+
+type API = "meals.json" :> Get '[JSON] Meals
 
 startApp :: IO ()
 startApp = run 8080 app
@@ -32,9 +41,13 @@ api :: Proxy API
 api = Proxy
 
 server :: Server API
-server = return users
+server = return defaultMeals
 
-users :: [User]
-users = [ User 1 "Isaac" "Newton"
-        , User 2 "Albert" "Einstein"
-        ]
+defaultMeals :: Meals
+defaultMeals = Meals $ M.fromList
+  [
+    ("m1", Meal "Sushi" "Finest fish and veggies" 22.99),
+    ("m2", Meal "Schnitzel" "A german specialty!" 16.5),
+    ("m3", Meal "Barbecue Burger" "American, raw, meaty" 12.99),
+    ("m4", Meal "Green Bowl" "Healthy...and green..." 18.99)
+  ]

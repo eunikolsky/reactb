@@ -67,6 +67,7 @@ library:
     - servant-server
     - wai
     - wai-cors
+    - wai-extra
     - warp
 
 executables:

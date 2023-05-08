@@ -21,24 +21,51 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
-- aeson
-- servant-server
-- wai
-- warp
 
 ghc-options:
 - -Wall
 - -Wcompat
 - -Widentities
-- -Wincomplete-record-updates
-- -Wincomplete-uni-patterns
+- -fhide-source-paths
+- -Wnoncanonical-monad-instances
+- -Werror=incomplete-record-updates
+- -Werror=incomplete-patterns
+- -Werror=incomplete-uni-patterns
 - -Wmissing-export-lists
 - -Wmissing-home-modules
+- -Wmissing-deriving-strategies
+- -Wunused-packages
+- -Werror=missing-fields
+- -Werror=missing-methods
 - -Wpartial-fields
 - -Wredundant-constraints
+- -Werror=empty-enumerations
+- -Werror=missing-home-modules
+
+default-extensions:
+- BangPatterns
+- BinaryLiterals
+- DeriveGeneric
+- DerivingStrategies
+- FlexibleInstances
+- GeneralizedNewtypeDeriving
+- ImportQualifiedPost
+- LambdaCase
+- MultiParamTypeClasses
+- MultiWayIf
+- NamedFieldPuns
+- NumericUnderscores
+- OverloadedStrings
+- ScopedTypeVariables
+- TypeApplications
 
 library:
   source-dirs: src
+  dependencies:
+    - aeson
+    - servant-server
+    - wai
+    - warp
 
 executables:
   reactb:
@@ -65,5 +92,3 @@ tests:
     - reactb
     - hspec
     - hspec-wai
-    - hspec-wai-json
-    - aeson

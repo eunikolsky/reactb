@@ -41,7 +41,7 @@ library:
   source-dirs: src
 
 executables:
-  reactb-exe:
+  reactb:
     main:                Main.hs
     source-dirs:         app
     ghc-options:

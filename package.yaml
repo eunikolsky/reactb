@@ -64,6 +64,8 @@ library:
   dependencies:
     - aeson
     - containers
+    - random-strings
+    - servant-options
     - servant-server
     - wai
     - wai-cors

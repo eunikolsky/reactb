@@ -34,6 +34,7 @@ firebase's API from the videos so far:
 
 newtype Orders = Orders A.Object
   deriving stock (Eq, Show)
+  deriving newtype (Semigroup, Monoid)
 
 $(deriveJSON defaultOptions ''Orders)
 
@@ -52,8 +53,7 @@ type RuntimeState = MVar Orders
 
 startApp :: IO ()
 startApp = do
-  -- newMVar mempty
-  state <- newMVar $ Orders mempty
+  state <- newMVar mempty
   run 8080 $ app state
 
 app :: RuntimeState -> Application

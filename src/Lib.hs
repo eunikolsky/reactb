@@ -21,20 +21,16 @@ import Network.Wai.Middleware.Servant.Options
 import Servant
 import Test.RandomStrings
 
-data Meal = Meal
-  { name :: String
-  , description :: String
-  , price :: Double
-  } deriving stock (Eq, Show)
+{-
+https://firebase.google.com/docs/database/rest/start
 
-$(deriveJSON defaultOptions ''Meal)
+We support only JSON objects (top-level) in the API.
 
-type MealKey = String
-
-newtype Meals = Meals (Map MealKey Meal)
-  deriving stock (Eq, Show)
-
-$(deriveJSON defaultOptions ''Meals)
+firebase's API from the videos so far:
+* `POST /foo.json` with json object: creates a unique key, stores the object under that key in the top-level object, and returns `{"name": "new_key"}`
+* `PUT /foo.json` with json object: replaces the top-level object with the given object, and "the response will contain the data we wrote to the database" (apparently the entire object, like `GET`)
+* `GET /foo.json`: returns the top-level object
+-}
 
 type OrderKey = String
 type Order = A.Value
@@ -44,9 +40,8 @@ newtype Orders = Orders (Map OrderKey Order)
 
 $(deriveJSON defaultOptions ''Orders)
 
-type API = "meals.json" :> Get '[JSON] Meals
-  -- TODO in fact, firebase returns the key of the added object
-  :<|> "orders.json" :> ReqBody '[JSON] A.Value :> Post '[JSON] NoContent
+type API
+  = "orders.json" :> ReqBody '[JSON] A.Value :> Post '[JSON] NoContent
   :<|> "orders.json" :> Get '[JSON] Orders
 
 type RuntimeState = MVar Orders
@@ -70,10 +65,7 @@ api :: Proxy API
 api = Proxy
 
 server :: RuntimeState -> Server API
-server state = getMeals :<|> postOrder state :<|> getOrders state
-
-getMeals :: Handler Meals
-getMeals = return defaultMeals
+server state = postOrder state :<|> getOrders state
 
 postOrder :: RuntimeState -> A.Value -> Handler NoContent
 postOrder state order = liftIO $ do
@@ -85,6 +77,7 @@ postOrder state order = liftIO $ do
 getOrders :: RuntimeState -> Handler Orders
 getOrders state = liftIO $ readMVar state
 
+{- TODO load default data from file
 defaultMeals :: Meals
 defaultMeals = Meals $ M.fromList
   [
@@ -93,3 +86,4 @@ defaultMeals = Meals $ M.fromList
     ("m3", Meal "Barbecue Burger" "American, raw, meaty" 12.99),
     ("m4", Meal "Green Bowl" "Healthy...and green..." 18.99)
   ]
+-}

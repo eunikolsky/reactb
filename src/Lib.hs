@@ -37,8 +37,14 @@ newtype Orders = Orders A.Object
 
 $(deriveJSON defaultOptions ''Orders)
 
+-- | Generated key for an object submitted with `POST`.
+newtype NewKey = NewKey { name :: String }
+  deriving stock (Eq, Show)
+
+$(deriveJSON defaultOptions ''NewKey)
+
 type API
-  = "orders.json" :> ReqBody '[JSON] A.Object :> Post '[JSON] NoContent
+  = "orders.json" :> ReqBody '[JSON] A.Object :> Post '[JSON] NewKey
   :<|> "orders.json" :> Get '[JSON] Orders
 
 type RuntimeState = MVar Orders
@@ -65,14 +71,14 @@ api = Proxy
 server :: RuntimeState -> Server API
 server state = postOrder state :<|> getOrders state
 
-postOrder :: RuntimeState -> A.Object -> Handler NoContent
+postOrder :: RuntimeState -> A.Object -> Handler NewKey
 postOrder state order = liftIO $ do
   -- firebase push ids: https://gist.github.com/mikelehen/3596a30bd69384624c11
   key <- randomWord (onlyAlphaNum randomASCII) 20
   -- modifyMVar
   (Orders orders) <- takeMVar state
   putMVar state . Orders $ A.insert (AK.fromString key) (A.Object order) orders
-  return NoContent
+  pure $ NewKey key
 
 getOrders :: RuntimeState -> Handler Orders
 getOrders state = liftIO $ readMVar state

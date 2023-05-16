@@ -10,9 +10,9 @@ import Control.Concurrent.MVar
 import Control.Monad.IO.Class
 import Data.Aeson
 import Data.Aeson qualified as A
+import Data.Aeson.Key qualified as AK
+import Data.Aeson.KeyMap qualified as A
 import Data.Aeson.TH
-import Data.Map.Strict (Map)
-import Data.Map.Strict qualified as M
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.RequestLogger
@@ -32,23 +32,21 @@ firebase's API from the videos so far:
 * `GET /foo.json`: returns the top-level object
 -}
 
-type OrderKey = String
-type Order = A.Value
-
-newtype Orders = Orders (Map OrderKey Order)
+newtype Orders = Orders A.Object
   deriving stock (Eq, Show)
 
 $(deriveJSON defaultOptions ''Orders)
 
 type API
-  = "orders.json" :> ReqBody '[JSON] A.Value :> Post '[JSON] NoContent
+  = "orders.json" :> ReqBody '[JSON] A.Object :> Post '[JSON] NoContent
   :<|> "orders.json" :> Get '[JSON] Orders
 
 type RuntimeState = MVar Orders
 
 startApp :: IO ()
 startApp = do
-  state <- newMVar $ Orders M.empty
+  -- newMVar mempty
+  state <- newMVar $ Orders mempty
   run 8080 $ app state
 
 app :: RuntimeState -> Application
@@ -67,11 +65,13 @@ api = Proxy
 server :: RuntimeState -> Server API
 server state = postOrder state :<|> getOrders state
 
-postOrder :: RuntimeState -> A.Value -> Handler NoContent
+postOrder :: RuntimeState -> A.Object -> Handler NoContent
 postOrder state order = liftIO $ do
+  -- firebase push ids: https://gist.github.com/mikelehen/3596a30bd69384624c11
   key <- randomWord (onlyAlphaNum randomASCII) 20
+  -- modifyMVar
   (Orders orders) <- takeMVar state
-  putMVar state . Orders $ M.insert key order orders
+  putMVar state . Orders $ A.insert (AK.fromString key) (A.Object order) orders
   return NoContent
 
 getOrders :: RuntimeState -> Handler Orders

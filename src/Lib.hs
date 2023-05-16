@@ -45,6 +45,7 @@ $(deriveJSON defaultOptions ''NewKey)
 
 type API
   = "orders.json" :> ReqBody '[JSON] A.Object :> Post '[JSON] NewKey
+  :<|> "orders.json" :> ReqBody '[JSON] A.Object :> Put '[JSON] Orders
   :<|> "orders.json" :> Get '[JSON] Orders
 
 type RuntimeState = MVar Orders
@@ -69,7 +70,7 @@ api :: Proxy API
 api = Proxy
 
 server :: RuntimeState -> Server API
-server state = postOrder state :<|> getOrders state
+server state = postOrder state :<|> putOrder state :<|> getOrders state
 
 postOrder :: RuntimeState -> A.Object -> Handler NewKey
 postOrder state order = liftIO $ do
@@ -79,6 +80,12 @@ postOrder state order = liftIO $ do
   (Orders orders) <- takeMVar state
   putMVar state . Orders $ A.insert (AK.fromString key) (A.Object order) orders
   pure $ NewKey key
+
+putOrder :: RuntimeState -> A.Object -> Handler Orders
+putOrder state obj = liftIO $ do
+  let orders = Orders obj
+  modifyMVar_ state . const $ pure orders
+  pure orders
 
 getOrders :: RuntimeState -> Handler Orders
 getOrders state = liftIO $ readMVar state

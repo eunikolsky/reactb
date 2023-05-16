@@ -8,7 +8,6 @@ module Lib
 import Control.Concurrent.MVar
 import Control.Monad.IO.Class
 import Data.Aeson
-import Data.Aeson qualified as A
 import Data.Aeson.Key qualified as AK
 import Data.Aeson.KeyMap qualified as A
 import Network.Wai
@@ -30,10 +29,6 @@ firebase's API from the videos so far:
 * `GET /foo.json`: returns the top-level object
 -}
 
-newtype Orders = Orders A.Object
-  deriving stock (Eq, Show)
-  deriving newtype (ToJSON, Semigroup, Monoid)
-
 -- | Generated key for an object submitted with `POST`.
 newtype NewKey = NewKey String
   deriving stock (Eq, Show)
@@ -44,11 +39,11 @@ instance ToJSON NewKey where
   toJSON (NewKey key) = object ["name" .= key]
 
 type API
-  = "orders.json" :> ReqBody '[JSON] A.Object :> Post '[JSON] NewKey
-  :<|> "orders.json" :> ReqBody '[JSON] A.Object :> Put '[JSON] Orders
-  :<|> "orders.json" :> Get '[JSON] Orders
+  = "orders.json" :> ReqBody '[JSON] Object :> Post '[JSON] NewKey
+  :<|> "orders.json" :> ReqBody '[JSON] Object :> Put '[JSON] Object
+  :<|> "orders.json" :> Get '[JSON] Object
 
-type RuntimeState = MVar Orders
+type RuntimeState = MVar Object
 
 startApp :: IO ()
 startApp = do
@@ -71,21 +66,20 @@ api = Proxy
 server :: RuntimeState -> Server API
 server state = postOrder state :<|> putOrder state :<|> getOrders state
 
-postOrder :: RuntimeState -> A.Object -> Handler NewKey
+postOrder :: RuntimeState -> Object -> Handler NewKey
 postOrder state order = liftIO $ do
   -- firebase push ids: https://gist.github.com/mikelehen/3596a30bd69384624c11
   key <- randomWord (onlyAlphaNum randomASCII) 20
-  modifyMVar_ state $ \(Orders orders) ->
-    pure . Orders $ A.insert (AK.fromString key) (A.Object order) orders
+  modifyMVar_ state $ \obj ->
+    pure $ A.insert (AK.fromString key) (Object order) obj
   pure $ NewKey key
 
-putOrder :: RuntimeState -> A.Object -> Handler Orders
+putOrder :: RuntimeState -> Object -> Handler Object
 putOrder state obj = liftIO $ do
-  let orders = Orders obj
-  modifyMVar_ state . const $ pure orders
-  pure orders
+  modifyMVar_ state . const $ pure obj
+  pure obj
 
-getOrders :: RuntimeState -> Handler Orders
+getOrders :: RuntimeState -> Handler Object
 getOrders state = liftIO $ readMVar state
 
 {- TODO load default data from file

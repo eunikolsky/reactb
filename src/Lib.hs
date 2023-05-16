@@ -38,10 +38,11 @@ newtype NewKey = NewKey String
 instance ToJSON NewKey where
   toJSON (NewKey key) = object ["name" .= key]
 
-type API
-  = "orders.json" :> ReqBody '[JSON] Object :> Post '[JSON] NewKey
-  :<|> "orders.json" :> ReqBody '[JSON] Object :> Put '[JSON] Object
-  :<|> "orders.json" :> Get '[JSON] Object
+type API = "orders.json" :>
+    ( ReqBody '[JSON] Object :> Post '[JSON] NewKey
+    :<|> ReqBody '[JSON] Object :> Put '[JSON] Object
+    :<|> Get '[JSON] Object
+    )
 
 type RuntimeState = MVar Object
 

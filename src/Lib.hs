@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds       #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators   #-}
 module Lib
     ( startApp
@@ -12,7 +11,6 @@ import Data.Aeson
 import Data.Aeson qualified as A
 import Data.Aeson.Key qualified as AK
 import Data.Aeson.KeyMap qualified as A
-import Data.Aeson.TH
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.RequestLogger
@@ -34,15 +32,16 @@ firebase's API from the videos so far:
 
 newtype Orders = Orders A.Object
   deriving stock (Eq, Show)
-  deriving newtype (Semigroup, Monoid)
-
-$(deriveJSON defaultOptions ''Orders)
+  deriving newtype (ToJSON, Semigroup, Monoid)
 
 -- | Generated key for an object submitted with `POST`.
-newtype NewKey = NewKey { name :: String }
+newtype NewKey = NewKey String
   deriving stock (Eq, Show)
 
-$(deriveJSON defaultOptions ''NewKey)
+-- `deriving newtype (ToJSON)` doesn't work because it doesn't add the `name` field when `NewKey` had `name :: String`;
+-- and `deriving stock (ToJSON)` doesn't work because `ToJSON` isn't a stock derivable class.
+instance ToJSON NewKey where
+  toJSON (NewKey key) = object ["name" .= key]
 
 type API
   = "orders.json" :> ReqBody '[JSON] A.Object :> Post '[JSON] NewKey

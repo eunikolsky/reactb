@@ -76,9 +76,8 @@ postOrder :: RuntimeState -> A.Object -> Handler NewKey
 postOrder state order = liftIO $ do
   -- firebase push ids: https://gist.github.com/mikelehen/3596a30bd69384624c11
   key <- randomWord (onlyAlphaNum randomASCII) 20
-  -- modifyMVar
-  (Orders orders) <- takeMVar state
-  putMVar state . Orders $ A.insert (AK.fromString key) (A.Object order) orders
+  modifyMVar_ state $ \(Orders orders) ->
+    pure . Orders $ A.insert (AK.fromString key) (A.Object order) orders
   pure $ NewKey key
 
 putOrder :: RuntimeState -> A.Object -> Handler Orders

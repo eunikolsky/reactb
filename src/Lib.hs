@@ -10,6 +10,9 @@ import Control.Monad.IO.Class
 import Data.Aeson
 import Data.Aeson.Key qualified as AK
 import Data.Aeson.KeyMap qualified as A
+import Data.Map (Map, (!?))
+import Data.Map qualified as M
+import Data.Maybe
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.RequestLogger
@@ -38,13 +41,16 @@ newtype NewKey = NewKey String
 instance ToJSON NewKey where
   toJSON (NewKey key) = object ["name" .= key]
 
-type API = "orders.json" :>
+type API = Capture "jsonRoot" Root :>
     ( ReqBody '[JSON] Object :> Post '[JSON] NewKey
     :<|> ReqBody '[JSON] Object :> Put '[JSON] Object
     :<|> Get '[JSON] Object
     )
 
-type RuntimeState = MVar Object
+-- | The top-level "namespace" where objects are stored.
+type Root = String
+
+type RuntimeState = MVar (Map Root Object)
 
 startApp :: IO ()
 startApp = do
@@ -65,23 +71,28 @@ api :: Proxy API
 api = Proxy
 
 server :: RuntimeState -> Server API
-server state = postOrder state :<|> putOrder state :<|> getOrders state
+-- FIXME verify `root` ends with `.json`
+server state root = postOrder state root :<|> putOrder state root :<|> getOrders state root
 
-postOrder :: RuntimeState -> Object -> Handler NewKey
-postOrder state order = liftIO $ do
+postOrder :: RuntimeState -> Root -> Object -> Handler NewKey
+postOrder state root order = liftIO $ do
   -- firebase push ids: https://gist.github.com/mikelehen/3596a30bd69384624c11
   key <- randomWord (onlyAlphaNum randomASCII) 20
-  modifyMVar_ state $ \obj ->
-    pure $ A.insert (AK.fromString key) (Object order) obj
+  modifyMVar_ state $ \state' -> do
+    let rootState = fromMaybe mempty $ state' !? root
+        newRootState = A.insert (AK.fromString key) (Object order) rootState
+    pure $ M.insert root newRootState state'
+
   pure $ NewKey key
 
-putOrder :: RuntimeState -> Object -> Handler Object
-putOrder state obj = liftIO $ do
-  modifyMVar_ state . const $ pure obj
+putOrder :: RuntimeState -> Root -> Object -> Handler Object
+putOrder state root obj = liftIO $ do
+  modifyMVar_ state $ pure . M.insert root obj
   pure obj
 
-getOrders :: RuntimeState -> Handler Object
-getOrders state = liftIO $ readMVar state
+getOrders :: RuntimeState -> Root -> Handler Object
+getOrders state root = liftIO . withMVar state $ \state' ->
+    pure $ fromMaybe mempty $ state' !? root
 
 {- TODO load default data from file
 defaultMeals :: Meals

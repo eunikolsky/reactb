@@ -15,6 +15,7 @@ import Data.List (isSuffixOf)
 import Data.Map (Map, (!?))
 import Data.Map qualified as M
 import Data.Maybe
+import Network.HTTP.Types.Method
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.RequestLogger
@@ -67,7 +68,13 @@ app = logStdoutDev
   . serve api
   . server
   where
-    policy = simpleCorsResourcePolicy { corsRequestHeaders = ["content-type"] }
+    policy = simpleCorsResourcePolicy
+      { corsRequestHeaders = ["content-type"]
+      -- this adds `PUT` into the list of allowed methods, otherwise:
+      -- "Method requested in Access-Control-Request-Method of CORS request is not supported; requested: PUT; supported are GET, HEAD, POST."
+      -- CORS （╯°□°）╯ ┻━┻
+      , corsMethods = [methodGet, methodHead, methodPost, methodPut]
+      }
 
 api :: Proxy API
 api = Proxy

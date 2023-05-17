@@ -51,6 +51,7 @@ library
       aeson
     , base >=4.7 && <5
     , containers
+    , http-types
     , random-strings
     , servant-options
     , servant-server

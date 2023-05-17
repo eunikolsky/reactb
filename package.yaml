@@ -64,6 +64,7 @@ library:
   dependencies:
     - aeson
     - containers
+    - http-types
     - random-strings
     - servant-options
     - servant-server

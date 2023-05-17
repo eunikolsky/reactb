@@ -72,26 +72,26 @@ api = Proxy
 
 server :: RuntimeState -> Server API
 -- FIXME verify `root` ends with `.json`
-server state root = postOrder state root :<|> putOrder state root :<|> getOrders state root
+server state root = postObject state root :<|> putObject state root :<|> getObjects state root
 
-postOrder :: RuntimeState -> Root -> Object -> Handler NewKey
-postOrder state root order = liftIO $ do
+postObject :: RuntimeState -> Root -> Object -> Handler NewKey
+postObject state root obj = liftIO $ do
   -- firebase push ids: https://gist.github.com/mikelehen/3596a30bd69384624c11
   key <- randomWord (onlyAlphaNum randomASCII) 20
   modifyMVar_ state $ \state' -> do
     let rootState = fromMaybe mempty $ state' !? root
-        newRootState = A.insert (AK.fromString key) (Object order) rootState
+        newRootState = A.insert (AK.fromString key) (Object obj) rootState
     pure $ M.insert root newRootState state'
 
   pure $ NewKey key
 
-putOrder :: RuntimeState -> Root -> Object -> Handler Object
-putOrder state root obj = liftIO $ do
+putObject :: RuntimeState -> Root -> Object -> Handler Object
+putObject state root obj = liftIO $ do
   modifyMVar_ state $ pure . M.insert root obj
   pure obj
 
-getOrders :: RuntimeState -> Root -> Handler Object
-getOrders state root = liftIO . withMVar state $ \state' ->
+getObjects :: RuntimeState -> Root -> Handler Object
+getObjects state root = liftIO . withMVar state $ \state' ->
     pure $ fromMaybe mempty $ state' !? root
 
 {- TODO load default data from file

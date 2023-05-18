@@ -1,0 +1,63 @@
+# based on https://kodimensional.dev/github-actions
+
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      # `release.yml` handles version tags; no need for duplicate work
+      - "v*"
+  pull_request:
+
+jobs:
+  stack:
+    name: stack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: haskell/actions/setup@v1
+        with:
+          enable-stack: true
+
+      - uses: actions/cache@v3
+        name: Cache ~/.stack
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-stack-global-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-stack-global-${{ hashFiles('stack.yaml') }}-
+            ${{ runner.os }}-stack-global-
+
+      - uses: actions/cache@v3
+        name: Cache .stack-work
+        with:
+          path: .stack-work
+          key: ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.hs') }}
+          restore-keys: |
+            ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-
+            ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}-
+            ${{ runner.os }}-stack-work-
+
+      - name: Build
+        run: stack build --system-ghc --test --no-run-tests
+
+      - name: Test
+        run: stack test --system-ghc
+
+  hlint:
+    name: hlint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Run HLint
+        env:
+          HLINT_VERSION: "3.5"
+        run: |
+          curl -sSLo hlint.tgz https://github.com/ndmitchell/hlint/releases/download/v${HLINT_VERSION}/hlint-${HLINT_VERSION}-x86_64-linux.tar.gz
+          tar xf hlint.tgz
+          ./hlint-${HLINT_VERSION}/hlint app/

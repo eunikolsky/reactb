@@ -94,5 +94,8 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - aeson
+    - aeson-qq
     - base
     - hspec
+    - reactb

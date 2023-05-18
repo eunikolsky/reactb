@@ -1,19 +1,20 @@
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
+{-# LANGUAGE QuasiQuotes #-}
+
 module Main (main) where
 
+import Data.Aeson
+import Data.Aeson.QQ
+import Lib (rmEmptyArrays)
 import Test.Hspec
 
 main :: IO ()
 main = hspec spec
 
 spec :: Spec
-spec = error "not implemented"
-
-{-
-with (return app) $ do
-    describe "GET /users" $ do
-        it "responds with 200" $ do
-            get "/users" `shouldRespondWith` 200
-        it "responds with [User]" $ do
-            let users = "[{\"userId\":1,\"userFirstName\":\"Isaac\",\"userLastName\":\"Newton\"},{\"userId\":2,\"userFirstName\":\"Albert\",\"userLastName\":\"Einstein\"}]"
-            get "/users" `shouldRespondWith` users
--}
+spec = do
+  describe "rmEmptyArrays" $ do
+    it "removes empty arrays" $ do
+      let (Object obj) = [aesonQQ| {"empty": [], "foo": {"bar": {"nil": [], "rest": 42}}, "nested": {"array": []}} |]
+          (Object expected) = [aesonQQ| {"foo": {"bar": {"rest": 42}}, "nested": {}} |]
+      rmEmptyArrays obj `shouldBe` expected

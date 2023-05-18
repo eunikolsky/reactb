@@ -3,6 +3,7 @@
 module Lib
     ( startApp
     , app
+    , rmEmptyArrays
     ) where
 
 import Control.Concurrent.MVar
@@ -33,6 +34,10 @@ firebase's API from the videos so far:
 * `POST /foo.json` with json object: creates a unique key, stores the object under that key in the top-level object, and returns `{"name": "new_key"}`
 * `PUT /foo.json` with json object: replaces the top-level object with the given object, and "the response will contain the data we wrote to the database" (apparently the entire object, like `GET`)
 * `GET /foo.json`: returns the top-level object
+
+Note: "If a property doesn't have a value, the Firebase Database doesn't store that property."
+(https://stackoverflow.com/a/48463446) — so far in the course, if an empty array is sent, it's not stored at all;
+I suppose the same happens with empty objects; what about other types?
 -}
 
 -- | Generated key for an object submitted with `POST`.
@@ -95,7 +100,7 @@ postObject state root obj = do
     key <- randomWord (onlyAlphaNum randomASCII) 20
     modifyMVar_ state $ \state' -> do
       let rootState = fromMaybe mempty $ state' !? root
-          newRootState = A.insert (AK.fromString key) (Object obj) rootState
+          newRootState = A.insert (AK.fromString key) (Object $ rmEmptyArrays obj) rootState
       pure $ M.insert root newRootState state'
 
     pure $ NewKey key
@@ -104,8 +109,9 @@ putObject :: RuntimeState -> Root -> Object -> Handler Object
 putObject state root obj = do
   verifyRoot root
   liftIO $ do
-    modifyMVar_ state $ pure . M.insert root obj
-    pure obj
+    let obj' = rmEmptyArrays obj
+    modifyMVar_ state $ pure . M.insert root obj'
+    pure obj'
 
 getObjects :: RuntimeState -> Root -> Handler Object
 getObjects state root = do
@@ -123,3 +129,12 @@ defaultMeals = Meals $ M.fromList
     ("m4", Meal "Green Bowl" "Healthy...and green..." 18.99)
   ]
 -}
+
+-- | Recursively removes all empty arrays from the object.
+rmEmptyArrays :: Object -> Object
+rmEmptyArrays = A.mapMaybe rmEmpty
+  where
+    rmEmpty :: Value -> Maybe Value
+    rmEmpty a@(Array arr) = if null arr then Nothing else Just a
+    rmEmpty (Object obj) = Just . Object $ rmEmptyArrays obj
+    rmEmpty x = Just x

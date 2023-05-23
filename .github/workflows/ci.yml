@@ -42,10 +42,13 @@ jobs:
             ${{ runner.os }}-stack-work-
 
       - name: Build
-        run: stack build --system-ghc --test --no-run-tests
+        run: stack build --system-ghc --test --no-run-tests && stack --local-bin-path=. install reactb --system-ghc
 
       - name: Test
         run: stack test --system-ghc
+
+      - name: Package to a docker image
+        run: docker build -t reactb .
 
   hlint:
     name: hlint

@@ -10,7 +10,9 @@ So `reactb` is a tiny implementation of the firebase API necessary for the cours
 
 ## Installation
 
-Download the latest binary from the [releases page](https://github.com/eunikolsky/reactb/releases), available for linux and macos, `x86_64`. Or you can build it yourself, see below.
+Download the latest binary from the [releases page](https://github.com/eunikolsky/reactb/releases), available for linux and macos, `x86_64`. You need to make it executable (on linux and macos): `chmod +x ~/downloads/reactb-0.1.0-Linux`, and on macos, also convince it to run the executable: `xattr -dr com.apple.quarantine ~/Downloads/reactb-0.1.0-macOS`.
+
+Or you can build it yourself, see below.
 
 ## Usage
 
